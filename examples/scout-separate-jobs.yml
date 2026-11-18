@@ -1,0 +1,41 @@
+name: Submit and wait for Scout
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    outputs:
+      task-id: ${{ steps.scout.outputs.task-id }}
+      task-url: ${{ steps.scout.outputs.task-url }}
+    steps:
+      # Replace v1 with an action repository commit until the first release is published.
+      - uses: Veridise/audithub-actions/actions/scout/submit@v1
+        id: scout
+        with:
+          client-id: ${{ secrets.AUDITHUB_CLIENT_ID }}
+          client-secret: ${{ secrets.AUDITHUB_CLIENT_SECRET }}
+          organization-id: ${{ vars.AUDITHUB_ORGANIZATION_ID }}
+          project-id: ${{ vars.AUDITHUB_PROJECT_ID }}
+          scout-config: |
+            {"budget": ${{ toJSON(vars.AUDITHUB_SCOUT_BUDGET) }}}
+          commit: ${{ github.sha }}
+  wait:
+    needs: submit
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    outputs:
+      findings-count: ${{ steps.scout.outputs.findings-count }}
+      findings-by-severity: ${{ steps.scout.outputs.findings-by-severity }}
+    steps:
+      - uses: Veridise/audithub-actions/actions/scout/wait@v1
+        id: scout
+        with:
+          client-id: ${{ secrets.AUDITHUB_CLIENT_ID }}
+          client-secret: ${{ secrets.AUDITHUB_CLIENT_SECRET }}
+          organization-id: ${{ vars.AUDITHUB_ORGANIZATION_ID }}
+          task-id: ${{ needs.submit.outputs.task-id }}

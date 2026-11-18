@@ -1,0 +1,9 @@
+{
+  "budget": "YOUR_SCOUT_BUDGET_CLASS",
+  "name": "Review contracts",
+  "parameters": {
+    "input_limit": ["src/", "contracts/"],
+    "extra_context": "Focus on access control and withdrawals.",
+    "generate_pocs": true
+  }
+}

@@ -1,0 +1,57 @@
+name: Scout wait
+description: Wait for an AuditHub task and report finding counts.
+author: Veridise
+inputs:
+  client-id:
+    description: "OIDC client ID."
+    required: true
+  client-secret:
+    description: "OIDC client secret. Pass a GitHub Actions secret."
+    required: true
+  oidc-scope:
+    description: "OIDC scopes; set empty to omit the scope parameter."
+    required: false
+    default: "openid profile"
+  organization-id:
+    description: "AuditHub organization ID."
+    required: true
+  task-id:
+    description: "Existing AuditHub task ID to wait for."
+    required: true
+  timeout-seconds:
+    description: "Maximum wait time in seconds. A timeout does not cancel the remote task."
+    required: false
+    default: "3600"
+  poll-interval-seconds:
+    description: "Seconds between task-status requests."
+    required: false
+    default: "15"
+outputs:
+  findings-count:
+    description: "Total findings reported by the completed task."
+    value: ${{ steps.scout.outputs.findings-count }}
+  findings-by-severity:
+    description: "JSON object with critical, high, medium, low, warning, and info counts."
+    value: ${{ steps.scout.outputs.findings-by-severity }}
+runs:
+  using: composite
+  steps:
+    - name: Set up uv
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        version: "0.10.9"
+        enable-cache: "false"
+        working-directory: ${{ github.action_path }}/../../..
+    - name: Scout wait
+      id: scout
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        AH_CLIENT_ID: ${{ inputs.client-id }}
+        AH_CLIENT_SECRET: ${{ inputs.client-secret }}
+        AH_OIDC_SCOPE: ${{ inputs.oidc-scope }}
+        AH_ORGANIZATION_ID: ${{ inputs.organization-id }}
+        AH_TASK_ID: ${{ inputs.task-id }}
+        AH_TIMEOUT_SECONDS: ${{ inputs.timeout-seconds }}
+        AH_POLL_INTERVAL_SECONDS: ${{ inputs.poll-interval-seconds }}
+      run: bash "$ACTION_PATH/../../../scripts/run-action.sh" wait

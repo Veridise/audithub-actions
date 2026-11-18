@@ -1,0 +1,74 @@
+name: Scout submit
+description: Submit an AuditHub Scout scan of a Git commit.
+author: Veridise
+inputs:
+  client-id:
+    description: "OIDC client ID."
+    required: true
+  client-secret:
+    description: "OIDC client secret. Pass a GitHub Actions secret."
+    required: true
+  oidc-scope:
+    description: "OIDC scopes; set empty to omit the scope parameter."
+    required: false
+    default: "openid profile"
+  organization-id:
+    description: "AuditHub organization ID."
+    required: true
+  project-id:
+    description: "AuditHub project ID in which to create a version and task."
+    required: true
+  repository-url:
+    description: "HTTPS Git repository URL accessible to the AuditHub server."
+    required: false
+    default: "${{ github.server_url }}/${{ github.repository }}.git"
+  commit:
+    description: "Full 40-character commit SHA to scan."
+    required: false
+    default: "${{ github.sha }}"
+  scout-config:
+    description: "Scout configuration as a JSON object. Provide exactly one of scout-config or scout-config-file."
+    required: false
+  scout-config-file:
+    description: "UTF-8 Scout JSON file; relative paths resolve from GITHUB_WORKSPACE. Mutually exclusive with scout-config."
+    required: false
+  version-name:
+    description: "Unique project version name. Defaults to scout-<short-sha>-<random-id>."
+    required: false
+  includes-submodules:
+    description: "Include Git submodules when AuditHub fetches the commit."
+    required: false
+    default: "false"
+outputs:
+  task-id:
+    description: "ID of the submitted AuditHub task."
+    value: ${{ steps.scout.outputs.task-id }}
+  task-url:
+    description: "AuditHub web link to the task analysis."
+    value: ${{ steps.scout.outputs.task-url }}
+runs:
+  using: composite
+  steps:
+    - name: Set up uv
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        version: "0.10.9"
+        enable-cache: "false"
+        working-directory: ${{ github.action_path }}/../../..
+    - name: Scout submit
+      id: scout
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        AH_CLIENT_ID: ${{ inputs.client-id }}
+        AH_CLIENT_SECRET: ${{ inputs.client-secret }}
+        AH_OIDC_SCOPE: ${{ inputs.oidc-scope }}
+        AH_ORGANIZATION_ID: ${{ inputs.organization-id }}
+        AH_PROJECT_ID: ${{ inputs.project-id }}
+        AH_REPOSITORY_URL: ${{ inputs.repository-url }}
+        AH_COMMIT: ${{ inputs.commit }}
+        AH_SCOUT_CONFIG: ${{ inputs.scout-config }}
+        AH_SCOUT_CONFIG_FILE: ${{ inputs.scout-config-file }}
+        AH_VERSION_NAME: ${{ inputs.version-name }}
+        AH_INCLUDES_SUBMODULES: ${{ inputs.includes-submodules }}
+      run: bash "$ACTION_PATH/../../../scripts/run-action.sh" submit

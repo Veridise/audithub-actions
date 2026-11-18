@@ -1,0 +1,38 @@
+name: Scout scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full commit SHA to scan (defaults to the workflow SHA)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      # Replace v1 with an action repository commit until the first release is published.
+      - uses: Veridise/audithub-actions/actions/scout/submit-and-wait@v1
+        id: scout
+        with:
+          client-id: ${{ secrets.AUDITHUB_CLIENT_ID }}
+          client-secret: ${{ secrets.AUDITHUB_CLIENT_SECRET }}
+          organization-id: ${{ vars.AUDITHUB_ORGANIZATION_ID }}
+          project-id: ${{ vars.AUDITHUB_PROJECT_ID }}
+          scout-config: |
+            {"budget": ${{ toJSON(vars.AUDITHUB_SCOUT_BUDGET) }}}
+          commit: ${{ inputs.commit || github.sha }}
+      - name: Display results
+        env:
+          TASK_URL: ${{ steps.scout.outputs.task-url }}
+          FINDINGS: ${{ steps.scout.outputs.findings-count }}
+          SEVERITIES: ${{ steps.scout.outputs.findings-by-severity }}
+        run: |
+          printf 'AuditHub: %s\n' "$TASK_URL"
+          printf 'Findings: %s\n' "$FINDINGS"
+          printf 'By severity: %s\n' "$SEVERITIES"
